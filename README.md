@@ -1,1 +1,188 @@
-# vibe-landingPage
+# 網站品質自動檢查工具
+
+這是一個專為網頁開發初學者設計的自動化檢查工具,能幫你確保網站符合基本的 HTML、SEO 和響應式設計標準。
+
+## 這個工具做什麼?
+
+這個工具會自動檢查你的網站,並給出 0-100 分的評分,檢查項目包括:
+
+### HTML/SEO 基礎檢查 (8 項)
+
+- ✅ 基本 HTML 結構 (`<html>`, `<head>`, `<body>`)
+- ✅ 語言屬性 (`<html lang>`)
+- ✅ 字元編碼 (`<meta charset="UTF-8">`)
+- ✅ 頁面標題 (`<title>` 不能是空的)
+- ✅ 網頁描述 (`<meta name="description">`,長度需介於 50-160 字元)
+- ✅ 主標題 (`<h1>` 有且只能有一個)
+- ✅ 圖片替代文字 (所有 `<img>` 都要有 `alt` 屬性)
+- ✅ 連結有效性 (所有 `<a>` 的 `href` 不能是空的或只有 `#`)
+
+### 響應式設計檢查 (3 項)
+
+- ✅ 手機版 (320px) 無水平捲動
+- ✅ 平板版 (768px) 無水平捲動
+- ✅ 桌機版 (1440px) 無水平捲動
+
+## 如何使用?
+
+### 第一次使用前的準備
+
+1. **確認你有 Node.js**
+
+   ```bash
+   node --version
+   ```
+
+   如果沒有安裝,請到 [Node.js 官網](https://nodejs.org/) 下載安裝 (建議使用 LTS 版本)
+
+2. **安裝專案相依套件**
+
+   ```bash
+   npm install
+   ```
+
+3. **安裝 Playwright 瀏覽器** ⚠️ **重要!必須執行!**
+
+   ```bash
+   npx playwright install
+   ```
+
+   **為什麼需要這一步?**
+
+   - Playwright 需要下載真實的瀏覽器來測試你的網頁
+   - 如果沒執行這步驟,會看到以下錯誤訊息:
+
+   ```text
+   Looks like Playwright Test or Playwright was just installed or updated.
+   Please run the following command to download new browsers:
+
+       npx playwright install
+
+   <3 Playwright Team
+   ```
+
+### 在本機執行檢查
+
+```bash
+npm run check:all
+```
+
+檢查結果會直接顯示在終端機,像這樣:
+
+```text
+🎯 本次檢查:82/100 分
+✅ 基本結構 `<html><head><body>`
+✅ `<html lang>`
+✅ `<meta charset="UTF-8">`
+❌ `<title>` 非空
+✅ `<meta name=description>` 50~160
+...
+```
+
+### 網頁檔案位置
+
+檢查工具會自動尋找以下位置的 HTML 檔案:
+
+- `index.html` (專案根目錄)
+- `docs/index.html` (docs 資料夾下)
+
+## GitHub Actions 自動化檢查
+
+當你把程式碼推送到 GitHub 後,會自動觸發檢查:
+
+### 1. PR 檢查 ([pr-check.yml](.github/workflows/pr-check.yml))
+
+**何時觸發**: 當你建立或更新 Pull Request 時
+
+**做什麼**:
+
+- 自動執行網站檢查
+- 在 PR 下方自動留言,顯示檢查結果 (包含分數和每項檢查的通過/失敗狀態)
+- 不會讓 CI 失敗 (即使分數不及格也不會阻擋 PR)
+
+**範例留言**:
+
+```markdown
+## 🎯 網站檢查結果
+
+### 總分:82/100
+
+| 規則 | 結果 |
+|------|------|
+| 基本結構 `<html><head><body>` | ✅ 通過 |
+| `<html lang>` | ✅ 通過 |
+| `<title>` 非空 | ❌ 失敗 |
+...
+```
+
+### 2. 分支檢查 ([website-check.yml](.github/workflows/website-check.yml))
+
+**何時觸發**: 當你推送程式碼到 `main` 或 `develop` 分支時
+
+**做什麼**:
+
+- 自動執行網站檢查
+- 在 GitHub Actions 的 Summary 頁面顯示結果
+- 同樣不會讓 CI 失敗
+
+## 技術細節
+
+### 使用的工具
+
+- **Cheerio**: 用來解析和檢查 HTML 結構 (類似 jQuery 的語法)
+- **Playwright**: 用來在真實瀏覽器中測試響應式設計和水平捲動
+
+### 評分方式
+
+- 總共 11 項檢查 (8 項 HTML/SEO + 3 項響應式)
+- 每項約佔 9 分 (100 / 11 ≈ 9.09)
+- 通過就得分,最後四捨五入
+
+### 檢查腳本說明
+
+[scripts/check-all.mjs](scripts/check-all.mjs) 主要流程:
+
+1. **尋找 HTML 檔案**: 在根目錄或 `docs/` 資料夾尋找 `index.html`
+2. **靜態檢查**: 使用 Cheerio 檢查 HTML 結構和 SEO 標籤
+3. **動態檢查**: 使用 Playwright 在不同螢幕寬度下測試水平捲動
+4. **輸出結果**:
+   - 終端機顯示
+   - GitHub Actions Summary
+   - PR 自動留言 (僅限 PR 環境)
+
+## 常見問題 FAQ
+
+**Q: 為什麼我的分數是 0 分?**
+
+- 檢查是否有 `index.html` 檔案
+- 確認檔案不是空的
+- 檢查檔案位置 (根目錄或 `docs/` 資料夾)
+
+**Q: 如何知道哪裡出錯了?**
+
+- 查看終端機輸出,每項檢查都會顯示 ✅ 或 ❌
+- 對於水平捲動問題,會顯示詳細的偵錯資訊
+
+**Q: 水平捲動檢查一直失敗怎麼辦?**
+
+- 檢查 CSS 是否有固定寬度 (如 `width: 1200px`)
+- 使用響應式單位 (如 `max-width: 100%`, `width: 100vw`)
+- 檢查是否有超出螢幕的元素
+
+**Q: 本機檢查通過,但 GitHub Actions 失敗?**
+
+- 確認 GitHub Actions 有正確安裝 Playwright (`npx playwright install --with-deps chromium`)
+- 檢查 PR 環境變數和權限設定
+
+**Q: PR 沒有自動留言?**
+
+- 確認 workflow 有設定正確的權限 (`pull-requests: write`)
+- 檢查 `GITHUB_TOKEN` 是否有效
+
+## 授權
+
+本專案由六角學院提供,用於教學用途。
+
+---
+
+如有任何問題,歡迎提出 Issue 或 Pull Request!
